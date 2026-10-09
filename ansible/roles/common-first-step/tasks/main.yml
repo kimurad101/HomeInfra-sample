@@ -1,0 +1,17 @@
+
+---
+- name: update apt package lists
+  apt:
+    update_cache: true
+
+- name: system update
+  apt:
+    upgrade: yes
+
+- name: install basic apt packages
+  apt:
+    name:
+      - curl
+      - ca-certificates
+      - nfs-common
+

@@ -1,0 +1,6 @@
+---
+- hosts: raspberrypi-default
+  become: yes
+  become_user: root
+  roles:
+    - common-first-step
