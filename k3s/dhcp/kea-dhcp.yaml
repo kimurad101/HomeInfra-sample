@@ -1,0 +1,232 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: kea-dhcp-primary
+  namespace: dhcp
+spec:
+  replicas: 1
+
+  selector:
+    matchLabels:
+      app: kea-dhcp-act
+
+  template:
+    metadata:
+      labels:
+        app: kea-dhcp-act
+
+    spec:
+      hostNetwork: true
+      dnsPolicy: ClusterFirstWithHostNet
+
+      ##重複対策
+      affinity:
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            - labelSelector:
+                matchExpressions:
+                  - key: app.kubernetes.io/instance
+                    operator: In
+                    values:
+                      - kea-dhcp-primary
+              topologyKey: "kubernetes.io/hostname"
+
+      ##ワーカーノードをプライマリ(アクティブ)とする。
+        nodeAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - weight: 100
+              preference:
+                matchExpressions:
+                - key: node-role.kubernetes.io/control-plane
+                  operator: DoesNotExist
+
+      containers:
+      - name: kea-dhcp
+        ##事前にDockerfileから生成したイメージを全ノードにインポートしておく。
+        image: kea-dhcp-deb:trixie
+        imagePullPolicy: Never
+        volumeMounts:
+          - name: kea-dhcp-config-volume
+            mountPath: /etc/kea/
+          - name: kea-dhcp-credentials-volume
+            mountPath: /etc/kea/creds/
+          - name: directapi-tls-primary-volume
+            mountPath: /etc/kea/control/primary/
+          - name: directapi-tls-standby-volume
+            mountPath: /etc/kea/control/standby/
+          - name: ha-listener-primary-tls-volume
+            mountPath: /etc/kea/ha/primary/
+          - name: ha-listener-standby-tls-volume
+            mountPath: /etc/kea/ha/standby/
+          - name: mariadb-tls-secret-volume
+            mountPath: /etc/kea/db/
+
+        securityContext:
+          capabilities:
+            add:
+            - NET_ADMIN
+            - NET_BIND_SERVICE
+        env:
+        - name: TZ
+          value: Asia/Tokyo
+
+        ports:
+        - containerPort: 67
+          protocol: UDP
+
+        - containerPort: 68
+          protocol: UDP
+
+        - containerPort: 8004
+          protocol: TCP
+
+        - containerPort: 8005
+          protocol: TCP
+
+      volumes:
+        - name: kea-dhcp-config-volume
+          configMap:
+            name: kea-dhcp-primary-config
+        - name: kea-dhcp-credentials-volume
+          secret:
+            secretName: kea-dhcp-credentials
+        - name: directapi-tls-primary-volume
+          secret:
+            secretName: kea-dhcp-directapi-primary-tls
+        - name: directapi-tls-standby-volume
+          secret:
+            secretName: kea-dhcp-directapi-standby-tls
+        - name: ha-listener-primary-tls-volume
+          secret:
+            secretName: kea-dhcp-ha-listener-primary-tls
+        - name: ha-listener-standby-tls-volume
+          secret:
+            secretName: kea-dhcp-ha-listener-standby-tls
+        - name: mariadb-tls-secret-volume
+          secret:
+            secretName: mariadb-maxscale-external-tls
+
+      resources:
+        requests:
+          cpu: "500m"
+          memory: 256Mi
+        limits:
+          cpu: "1"
+          memory: 1Gi
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: kea-dhcp-standby
+  namespace: dhcp
+spec:
+  replicas: 1
+
+  selector:
+    matchLabels:
+      app: kea-dhcp-sby
+
+  template:
+    metadata:
+      labels:
+        app: kea-dhcp-sby
+
+    spec:
+      hostNetwork: true
+      dnsPolicy: ClusterFirstWithHostNet
+
+      ##重複対策
+      affinity:
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            - labelSelector:
+                matchExpressions:
+                  - key: app.kubernetes.io/instance
+                    operator: In
+                    values:
+                      - kea-dhcp-standby
+              topologyKey: "kubernetes.io/hostname"
+
+        ##現状はマスターノードをスタンバイとする。
+        nodeAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - weight: 100
+              preference:
+                matchExpressions:
+                - key: node-role.kubernetes.io/control-plane
+                  operator: Exists
+
+      containers:
+      - name: kea-dhcp
+        ##事前にDockerfileから生成したイメージを全ノードにインポートしておく。
+        image: kea-dhcp-deb:trixie
+        imagePullPolicy: Never
+        volumeMounts:
+          - name: kea-dhcp-config-volume
+            mountPath: /etc/kea/
+          - name: kea-dhcp-credentials-volume
+            mountPath: /etc/kea/creds/
+          - name: directapi-tls-primary-volume
+            mountPath: /etc/kea/control/primary/
+          - name: directapi-tls-standby-volume
+            mountPath: /etc/kea/control/standby/
+          - name: ha-listener-primary-tls-volume
+            mountPath: /etc/kea/ha/primary/
+          - name: ha-listener-standby-tls-volume
+            mountPath: /etc/kea/ha/standby/
+          - name: mariadb-tls-secret-volume
+            mountPath: /etc/kea/db/
+
+        securityContext:
+          capabilities:
+            add:
+            - NET_ADMIN
+            - NET_BIND_SERVICE
+
+        env:
+        - name: TZ
+          value: Asia/Tokyo
+
+        ports:
+          - containerPort: 67
+            protocol: UDP
+
+          - containerPort: 68
+            protocol: UDP
+
+          - containerPort: 8004
+            protocol: TCP
+
+          - containerPort: 8005
+            protocol: TCP
+
+      volumes:
+        - name: kea-dhcp-config-volume
+          configMap:
+            name: kea-dhcp-secondary-config
+        - name: kea-dhcp-credentials-volume
+          secret:
+            secretName: kea-dhcp-credentials
+        - name: directapi-tls-primary-volume
+          secret:
+            secretName: kea-dhcp-directapi-primary-tls
+        - name: directapi-tls-standby-volume
+          secret:
+            secretName: kea-dhcp-directapi-standby-tls
+        - name: ha-listener-primary-tls-volume
+          secret:
+            secretName: kea-dhcp-ha-listener-primary-tls
+        - name: ha-listener-standby-tls-volume
+          secret:
+            secretName: kea-dhcp-ha-listener-standby-tls
+        - name: mariadb-tls-secret-volume
+          secret:
+            secretName: mariadb-maxscale-external-tls
+
+      resources:
+        requests:
+          cpu: "500m"
+          memory: 256Mi
+        limits:
+          cpu: "1"
+          memory: 1Gi

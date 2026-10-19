@@ -1,0 +1,39 @@
+apiVersion: v1
+kind: Secret
+metadata:
+  name: mariadb-user-03
+  namespace: db
+  labels:
+    k8s.mariadb.com/watch: ""
+stringData:
+  mariadb-kea-pw: "123456-change-password"
+---
+apiVersion: k8s.mariadb.com/v1alpha1
+kind: User
+metadata:
+  name: kea
+  namespace: db
+spec:
+  mariaDbRef:
+    name: mariadb-replication
+
+  passwordSecretKeyRef:
+    name: mariadb-user-kea
+    key: mariadb-kea-pw
+  host: "10.42.%"
+---
+apiVersion: k8s.mariadb.com/v1alpha1
+kind: Grant
+metadata:
+  name: grant-keabowl-lease
+  namespace: db
+spec:
+  mariaDbRef:
+    name: mariadb-replication
+  privileges:
+    - "ALL PRIVILEGES"
+  database: "kea-dhcp"
+  table: "*"
+  username: kea
+  grantOption: true
+  host: "10.42.%"

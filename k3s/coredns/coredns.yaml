@@ -1,0 +1,129 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: coredns-volume-pvc
+  namespace: dns
+spec:
+  accessModes:
+    - ReadWriteMany
+  storageClassName: csi-nfs-storage
+  resources:
+    requests:
+      storage: 256Mi
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: coredns-home
+  namespace: dns
+spec:
+  replicas: 2
+
+  selector:
+    matchLabels:
+      k8s-app: coredns-home
+
+  template:
+    metadata:
+      labels:
+        k8s-app: coredns-home
+
+    spec:
+      ##重複対策
+      affinity:
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            - labelSelector:
+                matchExpressions:
+                  - key: app.kubernetes.io/instance
+                    operator: In
+                    values:
+                      - coredns-home
+              topologyKey: "kubernetes.io/hostname"
+
+      initContainers:
+        - name: coredns-config-copy-to-pvc
+          image: busybox:latest
+          command:
+            - sh
+            - -c
+            - "cp /src-config-volume/Corefile /dst-config-volume/"
+          volumeMounts:
+            - name: coredns-temp-volume
+              mountPath: /src-config-volume
+            - name: coredns-volume
+              mountPath: /dst-config-volume
+
+      containers:
+      - name: coredns
+        image: coredns/coredns:latest
+        imagePullPolicy: IfNotPresent
+        args:
+          - -conf
+          - /etc/coredns/Corefile
+        volumeMounts:
+          - name: coredns-volume
+            mountPath: /etc/coredns/
+            readOnly: true
+        ports:
+          - name: dns
+            containerPort: 53
+            protocol: UDP
+
+          - name: dns-tcp
+            containerPort: 53
+            protocol: TCP
+
+      volumes:
+        - name: coredns-temp-volume
+          configMap:
+            name: coredns-home-network-config
+
+        - name: coredns-volume
+          persistentVolumeClaim:
+            claimName: coredns-volume-pvc
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: coredns-svc-primary
+  namespace: dns
+spec:
+  selector:
+    k8s-app: coredns-home
+  type: LoadBalancer
+  loadBalancerIP: "192.168.0.10"
+  ports:
+    - name: dns
+      protocol: UDP
+      port: 53
+      targetPort: 53
+
+    - name: dns-tcp
+      protocol: TCP
+      port: 53
+      targetPort: 53
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: coredns-svc-secondary
+  namespace: dns
+spec:
+  selector:
+    k8s-app: coredns-home
+  type: LoadBalancer
+  loadBalancerIP: "192.168.0.11"
+  ports:
+    - name: dns
+      protocol: UDP
+      port: 53
+      targetPort: 53
+
+    - name: dns-tcp
+      protocol: TCP
+      port: 53
+      targetPort: 53

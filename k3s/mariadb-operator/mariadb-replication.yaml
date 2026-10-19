@@ -1,0 +1,80 @@
+apiVersion: k8s.mariadb.com/v1alpha1
+kind: MariaDB
+metadata:
+  name: mariadb-replication
+  namespace: db
+spec:
+  rootPasswordSecretKeyRef:
+    name: mariadb-user-00
+    key: mariadb-root-pw
+
+  storage:
+    size: 1Gi
+    storageClassName: csi-nfs-storage
+
+  replicas: 2
+
+  replication:
+    enabled: true
+    semiSyncEnabled: true
+    semiSyncAckTimeout: 15s
+    semiSyncWaitPoint: AfterSync
+
+    primary:
+      podIndex: 0
+
+  ##重複対策
+  affinity:
+    podAntiAffinity:
+      requiredDuringSchedulingIgnoredDuringExecution:
+        - labelSelector:
+            matchExpressions:
+              - key: app.kubernetes.io/instance
+                operator: In
+                values:
+                  - mariadb-replication
+          topologyKey: "kubernetes.io/hostname"
+
+  ##ワーカーノードをプライマリDBとする
+  ## primary = podIndex 0 => worker node
+    nodeAffinity:
+      preferredDuringSchedulingIgnoredDuringExecution:
+        - weight: 100
+          preference:
+            matchExpressions:
+            - key: node-role.kubernetes.io/control-plane
+              operator: DoesNotExist
+
+  myCnf: |
+    [mariadb]
+    bind-address=0.0.0.0
+    default_storage_engine=InnoDB
+    binlog_format=row
+    innodb_autoinc_lock_mode=2
+    innodb_buffer_pool_size=1600M
+    max_allowed_packet=512M
+    character-set-server=utf8mb4
+    collation-server=utf8mb4_general_ci
+    ##以下NFS関連のパフォーマンス向上関係
+    innodb_flush_log_at_trx_commit=2
+    sync_binlog=10
+
+  resources:
+    requests:
+      cpu: "500m"
+      memory: 256Mi
+    limits:
+      cpu: "1"
+      memory: 1Gi
+
+  tls:
+    enabled: true
+
+  ##生成時の起動遅延処理
+  startupProbe:
+    initialDelaySeconds: 15
+    periodSeconds: 5
+    failureThreshold: 24
+  livenessProbe:
+    initialDelaySeconds: 30
+    periodSeconds: 10

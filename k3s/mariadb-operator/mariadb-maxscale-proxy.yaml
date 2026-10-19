@@ -1,0 +1,55 @@
+apiVersion: k8s.mariadb.com/v1alpha1
+kind: MaxScale
+metadata:
+  name: mariadb-maxscale-proxy
+  namespace: db
+spec:
+  replicas: 2
+
+  mariaDbRef:
+    name: mariadb-replication
+
+  tls:
+    enabled: true
+    listenerCertSecretRef:
+      name: mariadb-maxscale-external-tls
+    listenerCASecretRef:
+      name: mariadb-maxscale-external-tls
+
+    serverCertSecretRef:
+      name: mariadb-replication-client-cert
+    serverCASecretRef:
+      name: mariadb-replication-ca-bundle
+
+
+  monitor:
+    name: mariadb-monitor
+    module: mariadbmon
+    interval: 5s
+    cooperativeMonitoring: majority_of_running
+    params:
+      auto_failover: "true"
+      auto_rejoin: "true"
+      switchover_on_low_disk_space: "true"
+
+  admin:
+    port: 8989
+    guiEnabled: true
+
+  kubernetesService:
+    ##DB向け
+    type: LoadBalancer
+    loadBalancerIP: "192.168.0.13"
+    sessionAffinity: None
+    externalTrafficPolicy: Local
+
+  guiKubernetesService:
+    ##WebGUI向け
+    type: ClusterIP
+    sessionAffinity: ClientIP
+
+  services:
+    - name: rw-splitter
+      router: readwritesplit
+      listener:
+        port: 3306

@@ -1,0 +1,177 @@
+apiVersion: cert-manager.io/v1
+kind: Issuer
+metadata:
+  name: kea-dhcp-direct-selfsigned-issuer
+  namespace: dhcp
+spec:
+  selfSigned: {}
+---
+apiVersion: cert-manager.io/v1
+kind: Issuer
+metadata:
+  name: kea-dhcp-ha-listener-selfsigned-issuer
+  namespace: dhcp
+spec:
+  selfSigned: {}
+---
+#Direct共通CA Certificate
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: kea-dhcp-direct-common-ca-cert
+  namespace: dhcp
+spec:
+  isCA: true
+  secretName: kea-dhcp-direct-common-ca
+  commonName: kea-dhcp-direct-ca
+  issuerRef:
+    name: kea-dhcp-direct-selfsigned-issuer
+    kind: Issuer
+---
+##Direct共通CA Issuer
+apiVersion: cert-manager.io/v1
+kind: Issuer
+metadata:
+  name: kea-dhcp-direct-common-ca-issuer
+  namespace: dhcp
+spec:
+  ca:
+    secretName: kea-dhcp-direct-common-ca
+---
+#HAリスナー共通CA Certificate
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: kea-dhcp-ha-common-ca-cert
+  namespace: dhcp
+spec:
+  isCA: true
+  secretName: kea-dhcp-ha-common-ca
+  commonName: kea-dhcp-ha-listener-ca
+  issuerRef:
+    name: kea-dhcp-ha-listener-selfsigned-issuer
+    kind: Issuer
+---
+##HAリスナー共通CA Issuer
+apiVersion: cert-manager.io/v1
+kind: Issuer
+metadata:
+  name: kea-dhcp-ha-common-ca-issuer
+  namespace: dhcp
+spec:
+  ca:
+    secretName: kea-dhcp-ha-common-ca
+---
+##Directプライマリ用 Cert
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: kea-dhcp-directapi-primary-tls-cert
+  namespace: dhcp
+spec:
+  secretName: kea-dhcp-directapi-primary-tls
+  issuerRef:
+    name: kea-dhcp-direct-common-ca-issuer
+    kind: Issuer
+
+  duration: 8760h # 1year
+  renewBefore: 2920h # 3month
+
+  commonName: kea-dhcp-direct-api-primary
+
+  dnsNames:
+    - "localhost"
+    - "*.dhcp.svc.cluster.local"
+    - "*.dhcp.svc"
+    - "*.dhcp"
+
+  ipAddresses:
+    - "127.0.0.1"
+    - "192.168.0.8"
+    - "192.168.0.9"
+---
+##Directスタンバイ用 Cert
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: kea-dhcp-directapi-standby-tls-cert
+  namespace: dhcp
+spec:
+  secretName: kea-dhcp-directapi-standby-tls
+  issuerRef:
+    name: kea-dhcp-direct-common-ca-issuer
+    kind: Issuer
+
+  duration: 8760h # 1year
+  renewBefore: 2920h # 3month
+
+  commonName: kea-dhcp-direct-api-standby
+
+  dnsNames:
+    - "localhost"
+    - "*.dhcp.svc.cluster.local"
+    - "*.dhcp.svc"
+    - "*.dhcp"
+
+  ipAddresses:
+    - "127.0.0.1"
+    - "192.168.0.8"
+    - "192.168.0.9"
+
+---
+##HAリスナープライマリ用 Cert
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: kea-dhcp-ha-listener-primary-tls-cert
+  namespace: dhcp
+spec:
+  secretName: kea-dhcp-ha-listener-primary-tls
+  issuerRef:
+    name: kea-dhcp-ha-common-ca-issuer
+    kind: Issuer
+
+  duration: 8760h # 1year
+  renewBefore: 2920h # 3month
+
+  commonName: kea-dhcp-ha-listener
+
+  dnsNames:
+    - "localhost"
+    - "*.dhcp.svc.cluster.local"
+    - "*.dhcp.svc"
+    - "*.dhcp"
+
+  ipAddresses:
+    - "127.0.0.1"
+    - "192.168.10.8"
+    - "192.168.10.9"
+---
+##HAリスナースタンバイ用 Cert
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: kea-dhcp-ha-listener-standby-tls-cert
+  namespace: dhcp
+spec:
+  secretName: kea-dhcp-ha-listener-standby-tls
+  issuerRef:
+    name: kea-dhcp-ha-common-ca-issuer
+    kind: Issuer
+
+  duration: 8760h # 1year
+  renewBefore: 2920h # 3month
+
+  commonName: kea-dhcp-ha-listener-standby
+
+  dnsNames:
+    - "localhost"
+    - "*.dhcp.svc.cluster.local"
+    - "*.dhcp.svc"
+    - "*.dhcp"
+
+  ipAddresses:
+    - "127.0.0.1"
+    - "192.168.0.8"
+    - "192.168.0.9"
+

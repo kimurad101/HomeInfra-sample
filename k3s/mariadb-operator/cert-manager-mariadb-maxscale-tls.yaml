@@ -1,0 +1,37 @@
+apiVersion: cert-manager.io/v1
+kind: Issuer
+metadata:
+  name: mariadb-operator-selfsigned-issuer
+  namespace: db
+spec:
+  selfSigned: {}
+---
+##外部クライアント用
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: mariadb-maxscale-external-tls-cert
+  namespace: db
+
+spec:
+  secretName: mariadb-maxscale-external-tls
+  issuerRef:
+    name: mariadb-operator-selfsigned-issuer
+    kind: Issuer
+
+  duration: 8760h # 1year
+  renewBefore: 2920h # 3month
+
+  commonName: mariadb-operator-maxscale
+
+  dnsNames:
+    - "mariadb-maxscale-proxy.db.svc.cluster.local"
+    - "m.ariadb-maxscale-proxy.db.svc"
+    - "mariadb-maxscale-proxy.db"
+    - "mariadb-maxscale-proxy"
+    - "*.db.svc.cluster.local"
+    - "*.dhcp.svc.cluster.local"
+
+  ipAddresses:
+    - "127.0.0.1"
+    - "192.168.0.13"

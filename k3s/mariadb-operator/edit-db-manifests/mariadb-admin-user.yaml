@@ -1,0 +1,39 @@
+apiVersion: v1
+kind: Secret
+metadata:
+  name: mariadb-user-01
+  namespace: db
+  labels:
+    k8s.mariadb.com/watch: ""
+stringData:
+  mariadb-admin-pw: ""
+
+---
+apiVersion: k8s.mariadb.com/v1alpha1
+kind: User
+metadata:
+  name: admin
+  namespace: db
+spec:
+  mariaDbRef:
+    name: mariadb-replication
+  passwordSecretKeyRef:
+    name: mariadb-user-01
+    key: mariadb-admin-pw
+  host: "%"
+---
+apiVersion: k8s.mariadb.com/v1alpha1
+kind: Grant
+metadata:
+  name: grant-admin
+  namespace: db
+spec:
+  mariaDbRef:
+    name: mariadb-replication
+  privileges:
+    - "ALL PRIVILEGES"
+  database: "*"
+  table: "*"
+  username: admin
+  grantOption: true
+  host: "%"

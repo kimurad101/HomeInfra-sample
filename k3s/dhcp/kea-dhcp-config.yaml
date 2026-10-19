@@ -1,0 +1,253 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: kea-dhcp-primary-config
+  namespace: dhcp
+data:
+  kea-dhcp4.conf: |
+    {
+      "Dhcp4": {
+        "interfaces-config": {
+          "interfaces": [ "*" ],
+          "dhcp-socket-type": "raw"
+        },
+        "lease-database": <?include "/etc/kea/creds/leasedb-credentials.json"?>,
+        "hosts-database": <?include "/etc/kea/creds/hostsdb-credentials.json"?>,
+        "expired-leases-processing": {
+          "hold-reclaimed-time": 1800
+        },
+        "rebind-timer": 5400,
+        "valid-lifetime": 10800,
+        "option-data": [
+          {
+            "name": "routers",
+            "data": "192.168.0.1"
+          },{
+            "name": "domain-name-servers",
+            "data": "192.168.10.11,192.168.10.12"
+          }
+        ],
+        "control-sockets": [
+          {
+            "socket-type": "https",
+            "socket-address": "192.168.0.8",
+            "socket-port": 8004,
+            "trust-anchor": "/etc/kea/control/primary/ca.crt",
+            "cert-file": "/etc/kea/control/primary/tls.crt",
+            "key-file": "/etc/kea/control/primary/tls.key",
+            "cert-required": true,
+            "authentication": {
+              "type": "basic",
+              "realm": "kea-control-agent",
+              "clients": <?include "/etc/kea/creds/direct-active.json"?>,
+            }
+          }
+        ],
+        "hooks-libraries": [
+          {
+            "library": "libdhcp_mysql.so"
+          },{
+            "library": "libdhcp_lease_cmds.so"
+          },{
+            "library": "libdhcp_ha.so",
+            "parameters": {
+              "high-availability": [
+                {
+                  "this-server-name": "dhcp-primary",
+                  "mode": "hot-standby",
+                  "heartbeat-delay": 10000,
+                  "max-response-delay": 60000,
+                  "max-act-delay": 10000,
+                  "max-unackted-clients": 1,
+                  "http-dedicated-listener": true,
+                  "http-listener-address": "192.168.0.8",
+                  "http-listener-port": 8005,
+                  "trust-anchor": "/etc/kea/ha/primary/ca.crt",
+                  "cert-file": "/etc/kea/ha/primary/tls.crt",
+                  "key-file": "/etc/kea/ha/primary/tls.key",
+                  "cert-required": true,
+                  "peers": [
+                    {
+                      "name": "dhcp-primary",
+                      "url": "https://192.168.0.8:8005/",
+                      "tls": {
+                        "trust-anchor": "/etc/kea/ha/primary/ca.crt",
+                        "cert-file": "/etc/kea/ha/primary/tls.crt",
+                        "key-file": "/etc/kea/ha/primary/tls.key",
+                        "cert-required": true
+                      },
+                      "role": "primary",
+                      "auto-failover": true
+                    },{
+                      "name": "dhcp-standby",
+                      "url": "https://192.168.0.9:8005/",
+                      "tls": {
+                        "trust-anchor": "/etc/kea/ha/standby/ca.crt",
+                        "cert-file": "/etc/kea/ha/standby/tls.crt",
+                        "key-file": "/etc/kea/ha/standby/tls.key",
+                        "cert-required": true
+                      },
+                      "role": "standby",
+                      "auto-failover": true
+                    }
+                  ]
+                }
+              ]
+            }
+          }
+        ],
+        "reservations-global": false,
+        "reservations-in-subnet": false,
+        "reservations-out-of-pool": false,
+        "host-reservation-identifiers": [ "hw-address" ],
+        "subnet4": [
+          {
+            "id": 1,
+            "subnet": "192.168.0.0/24",
+            "pools": [
+              {
+                "pool": "192.168.0.20 - 192.168.0.254"
+              }
+            ]
+          }
+        ],
+        "loggers": [
+          {
+            "name": "kea-dhcp4",
+            "output-options": [
+              {
+                "output": "stdout",
+              }
+            ],
+            "severity": "DEBUG"
+          }
+        ]
+      }
+    }
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: kea-dhcp-secondary-config
+  namespace: dhcp
+data:
+  kea-dhcp4.conf: |
+    {
+      "Dhcp4": {
+        "interfaces-config": {
+          "interfaces": [ "*" ],
+          "dhcp-socket-type": "raw"
+        },
+        "lease-database": <?include "/etc/kea/creds/leasedb-credentials.json"?>,
+        "hosts-database": <?include "/etc/kea/creds/hostsdb-credentials.json"?>,
+        "expired-leases-processing": {
+          "hold-reclaimed-time": 1800
+        },
+        "rebind-timer": 5400,
+        "valid-lifetime": 10800,
+        "option-data": [
+          {
+            "name": "routers",
+            "data": "192.168.0.1"
+          },{
+            "name": "domain-name-servers",
+            "data": "192.168.0.11,192.168.10.12"
+          }
+        ],
+        "control-sockets": [
+          {
+            "socket-type": "https",
+            "socket-address": "192.168.10.9",
+            "socket-port": 8004,
+            "trust-anchor": "/etc/kea/control/standby/ca.crt",
+            "cert-file": "/etc/kea/control/standby/tls.crt",
+            "key-file": "/etc/kea/control/standby/tls.key",
+            "cert-required": true,
+            "authentication": {
+              "type": "basic",
+              "realm": "kea-control-agent",
+              "clients": <?include "/etc/kea/creds/direct-standby.json"?>,
+            }
+          }
+        ],
+        "hooks-libraries": [
+          {
+            "library": "libdhcp_mysql.so"
+          },{
+            "library": "libdhcp_lease_cmds.so"
+          },{
+            "library": "libdhcp_ha.so",
+            "parameters": {
+              "high-availability": [
+                {
+                  "this-server-name": "dhcp-standby",
+                  "mode": "hot-standby",
+                  "heartbeat-delay": 10000,
+                  "max-response-delay": 60000,
+                  "max-act-delay": 10000,
+                  "max-unackted-clients": 1,
+                  "http-dedicated-listener": true,
+                  "http-listener-address": "192.168.0.9",
+                  "http-listener-port": 8005,
+                  "trust-anchor": "/etc/kea/ha/standby/ca.crt",
+                  "cert-file": "/etc/kea/ha/standby/tls.crt",
+                  "key-file": "/etc/kea/ha/standby/tls.key",
+                  "cert-required": true,
+                  "peers": [
+                    {
+                      "name": "dhcp-primary",
+                      "url": "https://192.168.0.8:8005/",
+                      "tls": {
+                        "trust-anchor": "/etc/kea/ha/primary/ca.crt",
+                        "cert-file": "/etc/kea/ha/primary/tls.crt",
+                        "key-file": "/etc/kea/ha/primary/tls.key",
+                        "cert-required": true
+                      },
+                      "role": "primary",
+                      "auto-failover": true
+                    },{
+                      "name": "dhcp-standby",
+                      "url": "https://192.168.0.9:8005/",
+                      "tls": {
+                        "trust-anchor": "/etc/kea/ha/standby/ca.crt",
+                        "cert-file": "/etc/kea/ha/standby/tls.crt",
+                        "key-file": "/etc/kea/ha/standby/tls.key",
+                        "cert-required": true
+                      },
+                      "role": "standby",
+                      "auto-failover": true
+                    }
+                  ]
+                }
+              ]
+            }
+          }
+        ],
+        "reservations-global": false,
+        "reservations-in-subnet": false,
+        "reservations-out-of-pool": false,
+        "host-reservation-identifiers": [ "hw-address" ],
+        "subnet4": [
+          {
+            "id": 1,
+            "subnet": "192.168.0.0/24",
+            "pools": [
+              {
+                "pool": "192.168.0.20 - 192.168.0.254"
+              }
+            ]
+          }
+        ],
+        "loggers": [
+          {
+            "name": "kea-dhcp4",
+            "output_options": [
+              {
+                "output": "stdout",
+              }
+            ],
+            "severity": "DEBUG"
+          }
+        ]
+      }
+    }

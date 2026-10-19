@@ -1,0 +1,46 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: coredns-home-network-config
+  namespace: dns
+data:
+  Corefile: |
+    local {
+      # .localドメインの正引きクエリを上流に問い合わせしないようにNXDOMAINを返す。
+      template ANY ANY {
+        rcode NXDOMAIN
+      }
+
+    }
+
+    168.192.in-addr.arpa 16.172.in-addr.arpa 17.172.in-addr.arpa 18.172.in-addr.arpa 19.172.in-addr.arpa 20.172.in-addr.arpa 21.172.in-addr.arpa 22.172.in-addr.arpa 23.172.in-addr.arpa 24.172.in-addr.arpa 25.172.in-addr.arpa 26.172.in-addr.arpa 27.172.in-addr.arpa 28.172.in-addr.arpa 29.172.in-addr.arpa 30.172.in-addr.arpa 31.172.in-addr.arpa 10.in-addr.arpa {
+      # プライベートIPの逆引きクエリを上流に問い合わせしないようにNXDOMAINを返す。
+      template ANY ANY {
+        rcode NXDOMAIN
+      }
+    }
+
+    .:53 {
+      log
+      errors
+      health
+      hosts {
+        192.168.0.10 home.example.jp
+        2001:db8:1:23:45:6789::1 home.example.jp
+        fallthrough
+      }
+      ready
+      dnssec
+      forward . 8.8.8.8 8.8.4.4 [2001:4860:4860::8888] [2001:4860:4860::8844] {
+        policy random
+        max_fails 3
+      }
+      cache 900 {
+        prefetch 10 10m 10%
+        success 10000
+        denial 2500 30
+      }
+      loop
+      reload
+      loadbalance
+    }
