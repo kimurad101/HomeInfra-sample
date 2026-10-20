@@ -19,8 +19,8 @@ spec:
     name: mariadb-operator-selfsigned-issuer
     kind: Issuer
 
-  duration: 8760h # 1year
-  renewBefore: 2920h # 3month
+  duration: 8760h
+  renewBefore: 2920h
 
   commonName: mariadb-operator-maxscale
 
