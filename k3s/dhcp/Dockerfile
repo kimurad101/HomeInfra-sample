@@ -7,6 +7,7 @@ WORKDIR /run/kea
 WORKDIR /etc/kea/creds
 WORKDIR /etc/kea/control/primary
 WORKDIR /etc/kea/control/standby
+WORKDIR /etc/kea/setup
 WORKDIR /etc/kea/ha/primary
 WORKDIR /etc/kea/ha/standby
 WORKDIR /etc/kea/db

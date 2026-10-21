@@ -1,0 +1,43 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: kea-admin-db-init
+  namespace: db
+spec:
+  ttlSecondsAfterFinished: 60
+  template:
+    containers:
+      - name: kea-admin
+        ##事前にDockerfileから生成したイメージを全ノードにインポートしておく。
+        image: kea-dhcp-deb:trixie
+        imagePullPolicy: Never
+        command: ["/etc/kea/setup/kea-db-setup.sh"]
+        restartPolicy: Never
+
+        volumeMounts:
+          - name: kea-dhcp-config-volume
+            mountPath: /etc/kea/
+          - name: kea-dhcp-setup-secret
+            mountPath: /etc/kea/setup
+          - name: kea-dhcp-credentials-volume
+            mountPath: /etc/kea/creds/
+          - name: mariadb-tls-secret-volume
+            mountPath: /etc/kea/db/
+        env:
+        - name: TZ
+          value: Asia/Tokyo
+
+    volumes:
+      - name: kea-dhcp-setup-secret
+          secret:
+            secretName: kea-dhcp-setup-script
+      - name: kea-dhcp-config-volume
+          configMap:
+            name: kea-dhcp-primary-config
+      - name: kea-dhcp-credentials-volume
+          secret:
+            secretName: kea-dhcp-credentials
+      - name: mariadb-tls-secret-volume
+          secret:
+            secretName: mariadb-maxscale-external-tls
+
