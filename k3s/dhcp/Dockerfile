@@ -1,4 +1,7 @@
-FROM --platform=$BUILDPLATFORM debian:trixie-slim AS builder
+##以下はマルチアーキテクチャ対応のために「buildx」を使用する文字列(要別途構築)
+#FROM --platform=$BUILDPLATFORM debian:trixie-slim AS builder
+
+FROM debian:trixie-slim
 
 RUN echo "deb http://deb.debian.org/debian trixie-backports main contrib" >> /etc/apt/sources.list
 RUN apt-get update && apt-get upgrade -y && apt-get -t trixie-backports -y --no-install-recommends install kea-dhcp4-server kea-admin mariadb-client nano iputils-ping iproute2 && apt-get clean

@@ -6,13 +6,13 @@ metadata:
   labels:
     k8s.mariadb.com/watch: ""
 stringData:
-  mariadb-admin-pw: ""
+  mariadb-admin-pw: "def-change-password"
 
 ---
 apiVersion: k8s.mariadb.com/v1alpha1
 kind: User
 metadata:
-  name: admin
+  name: admin3
   namespace: db
 spec:
   mariaDbRef:
@@ -34,6 +34,6 @@ spec:
     - "ALL PRIVILEGES"
   database: "*"
   table: "*"
-  username: admin
+  username: admin3
   grantOption: true
   host: "%"

@@ -35,7 +35,7 @@ spec:
                   - mariadb-replication
           topologyKey: "kubernetes.io/hostname"
 
-  ##ワーカーノードをプライマリDBとする
+  ##ワーカーノードをプライマリDBとする。
   ## primary = podIndex 0 => worker node
     nodeAffinity:
       preferredDuringSchedulingIgnoredDuringExecution:

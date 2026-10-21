@@ -42,7 +42,7 @@ spec:
 
       containers:
       - name: kea-dhcp
-        ##事前にDockerfileから生成したイメージを全ノードにインポートしておく。
+        ##自作イメージを使用。事前に本ディレクトリ内にあるDockerfileから生成したイメージを全ノードにインポートしておく。
         image: kea-dhcp-deb:trixie
         imagePullPolicy: Never
         volumeMounts:
@@ -158,7 +158,7 @@ spec:
 
       containers:
       - name: kea-dhcp
-        ##事前にDockerfileから生成したイメージを全ノードにインポートしておく。
+        ##自作イメージを使用。事前に本ディレクトリ内にあるDockerfileから生成したイメージを全ノードにインポートしておく。
         image: kea-dhcp-deb:trixie
         imagePullPolicy: Never
         volumeMounts:
