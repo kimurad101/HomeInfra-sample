@@ -21,8 +21,13 @@
 ※(ここに新旧のソフトウェア構成図を載せる。)
 
 ※コストの都合で現時点ではK3S(Kubernetes)ではマルチノード(シングルマスター)構成で構築し、家内DNS、DHCP、DBサーバー(サービス)のみアクティブスタンバイ構成で構築。将来的にはK3S(Kubernetes)はHA構成で構築しつつ、可能な限り各種サーバー(サービス)の可用性を向上させる予定。<br>
-・[Raspberry Pi 4 Model B 4GB (arm64環境、OS:Raspberry Pi OS[Debian 13 (Trixie)])]x2 :(K3S [ワーカー兼用]マスターノード、ワーカーノード[本番])<br>
-・[VMware Workstation Player(amd64環境、ゲストOS:Debian 13 [Trixie]) ] (K3Sワーカーノード[テスト用])<br>
+
+| マシン | IP | OS | CPU | メモリ | ディスク | 役割 |
+| --- | --- | --- | --- | --- | --- | ---|
+| サーバー1(Raspberry Pi 4 Model B 4GB) | 192.168.0.? | Debian13(trixie) | 4C4T | 4GB | 16GB+120GB+2TB | (K3S)ワーカー兼用マスターノード&NAS |
+| サーバー2(Raspberry Pi 4 Model B 4GB) | 192.168.0.! | Debian13(trixie) | 4C4T | 4GB | 16GB | (K3S)ワーカーノード |
+| テスト用仮想マシン(Ryzen 5500UノートPC&VMware Workstation Player) | 192.168.0.x | Debian13(trixie) | 2C2T | 2GB | 16GB | (K3S)ワーカーノード(サーバー2役) |
+
 <br>
 ## 「用途」
 ※[進捗]用途:[ミドルウェア]:担当ノード[備考]<br>
