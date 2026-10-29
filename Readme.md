@@ -16,10 +16,18 @@
 <br>
 
 ## 「ネットワーク構成」
-※(ここに新旧のネットワーク構成図を載せる。)
+[移行前]<br>
+<img src="https://raw.githubusercontent.com/kimurad101/HomeInfra-sample/master/images/before_network_diagram_drawio.png" width="70%">
+
+[移行見込み]<br>
+<img src="https://raw.githubusercontent.com/kimurad101/HomeInfra-sample/master/images/after_network_diagram_drawio.png" width="70%">
 
 ## 「ホスト構成」
-※(ここに新旧のソフトウェア構成図を載せる。)
+[移行前]<br>
+<img src="https://raw.githubusercontent.com/kimurad101/HomeInfra-sample/master/images/before_architecture_diagram_drawio.png" width="85%">
+
+[移行見込み]<br>
+<img src="https://raw.githubusercontent.com/kimurad101/HomeInfra-sample/master/images/after_architecture_diagram_drawio.png" width="100%">
 
 ※コストの都合で現時点ではK3S(Kubernetes)ではマルチノード(シングルマスター)構成で構築し、家内DNS、DHCP、DBサーバー(サービス)のみアクティブスタンバイ構成で構築。将来的にはK3S(Kubernetes)をHA構成で構築しつつ、可能な限り各種サーバー(サービス)の可用性を向上させる見込みです。<br>
 
